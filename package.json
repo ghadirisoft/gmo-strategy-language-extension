@@ -1,0 +1,120 @@
+{
+  "name": "gmo-strategy",
+  "displayName": "GMO Strategy Language",
+  "description": "GMO Strategy language support + simulation execution",
+  "version": "1.0.0",
+  "icon": "icon.png",
+  "license": "SEE LICENSE IN LICENSE",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ghadirisoft/gmo-strategy-language-extension.git"
+  },
+  "publisher": "ghadirisoft",
+  "bugs": {
+    "url": "https://github.com/ghadirisoft/gmo-strategy-language-extension/issues"
+  },
+  "homepage": "https://github.com/ghadirisoft/gmo-strategy-language-extension#readme",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": ["Programming Languages", "Snippets"],
+  "activationEvents": [
+    "onLanguage:gmo",
+    "onCommand:gmo.runBacktest",
+    "onCommand:gmo.login",
+    "onCommand:gmo.logout",
+    "onCommand:gmo.debugToken"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "gmo",
+        "aliases": ["GMO Strategy", "gmo"],
+        "extensions": [".gmo"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "gmo",
+        "scopeName": "source.gmo",
+        "path": "./syntaxes/gmo.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "gmo",
+        "path": "./snippets/gmo.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "gmo.runBacktest",
+        "title": "GMO: Run Backtest"
+      },
+      {
+        "command": "gmo.login",
+        "title": "GMO: Login"
+      },
+      {
+        "command": "gmo.logout",
+        "title": "GMO: Logout"
+      },
+      {
+        "command": "gmo.debugToken",
+        "title": "GMO: Show Token"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.runBacktest",
+          "group": "navigation"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "gmo.runBacktest",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b",
+        "when": "editorLangId == gmo"
+      }
+    ],
+    "themes": [
+      {
+        "label": "GMO Strategy",
+        "uiTheme": "vs",
+        "path": "./themes/gmo-color-theme.json"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "entity.name.function.action.buy.gmo",
+            "settings": {
+              "foreground": "#16825d",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "entity.name.function.action.sell.gmo",
+            "settings": {
+              "foreground": "#c72e2e",
+              "fontStyle": "bold"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0"
+  }
+}

@@ -1,0 +1,57 @@
+{
+    "Strategy Template": {
+      "prefix": "gmo-strategy",
+      "body": [
+        "STRATEGY ${1:MyStrategy}",
+        "VERSION ${2:1.0}",
+        "DESCRIPTION: ${3:توضیح اختیاری}",
+        "",
+        "PARAMETERS:",
+        "  SIGNAL     = FIELD(0)  // نام سیگنال",
+        "  CONFIDENCE = FIELD(1)  // درصد اعتماد",
+        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)  // تاریخ + ساعت سیگنال",
+        "  PRICE      = FIELD(5)  // قیمت",
+        "  GmoML      = FIELD(6)  // پیشنهاد GmoML",
+        "  MARKET     = FIELD(7)  // وضعیت بازار",
+        "  FACTOR     = FIELD(8)  // عامل رخداد سیگنال",
+        "",
+        "RULES:",
+        "  SIGNAL = GREEN -> BUY(${4:1G})",
+        "  SIGNAL = BLUE -> BUY(${5:1G})",        
+        "  SIGNAL = YELLOW   -> SELL(${6:1G})",
+        "  SIGNAL = RED   -> SELL(${7:1G})",                
+        "END"
+      ],
+      "description": "قالب پایه‌ی استراتژی GMO"
+    },
+    "Buy Rule": {
+      "prefix": "gmo-buy",
+      "body": ["SIGNAL = ${1:GREEN} -> BUY(${2:1G})${3: IF CONFIDENCE > 70}"],
+      "description": "قانون خرید"
+    },
+    "Sell Rule": {
+      "prefix": "gmo-sell",
+      "body": ["SIGNAL = ${1:RED} -> SELL(${2:1G})${3: IF PRICE > 5000000}"],
+      "description": "قانون فروش"
+    },
+    "Buy Multi-Source": {
+      "prefix": "gmo-buy-multi",
+      "body": ["SIGNAL = GREEN -> BUY(BLUE:${1:0.5G}, GREEN:${2:0.5G})"],
+      "description": "خرید در چند منبع"
+    },
+    "Sell Multi-Source": {
+      "prefix": "gmo-sell-multi",
+      "body": ["SIGNAL = RED -> SELL(BLUE:${1:0.5G}, GREEN:${2:1G})"],
+      "description": "فروش از چند منبع"
+    },
+    "Last Confidence": {
+      "prefix": "gmo-last-conf",
+      "body": ["LAST_CONFIDENCE(${1:GREEN})"],
+      "description": "آخرین اعتماد سیگنال"
+    },
+    "Last Datetime": {
+      "prefix": "gmo-last-dt",
+      "body": ["LAST_DATETIME(${1:RED}, ${2:36H})"],
+      "description": "آخرین تاریخ/ساعت سیگنال با offset"
+    }
+  }

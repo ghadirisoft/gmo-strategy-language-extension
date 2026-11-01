@@ -1,0 +1,125 @@
+{
+  "$schema": "vscode://schemas/color-theme",
+  "name": "GMO Strategy",
+  "type": "light",
+  "colors": {
+    "editor.background": "#ffffff",
+    "editor.foreground": "#1e1e1e",
+    "editorLineNumber.foreground": "#9ca3af",
+    "editorLineNumber.activeForeground": "#0a2b5c",
+    "editorCursor.foreground": "#0a2b5c",
+    "editor.selectionBackground": "#e8a83844",
+    "editor.lineHighlightBackground": "#f6f8fa",
+    "editorIndentGuide.background1": "#e2e8f0",
+    "editorIndentGuide.activeBackground1": "#c0c8d4"
+  },
+  "tokenColors": [
+    {
+      "name": "Comments",
+      "scope": "comment.line.double-slash.gmo",
+      "settings": {
+        "foreground": "#8a94a3",
+        "fontStyle": "italic"
+      }
+    },
+    {
+      "name": "Keywords (STRATEGY, VERSION, IF, END, ...)",
+      "scope": "keyword.control.gmo",
+      "settings": {
+        "foreground": "#af00db",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Signal GREEN",
+      "scope": "constant.language.signal-green.gmo",
+      "settings": {
+        "foreground": "#1f9d55",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Signal RED",
+      "scope": "constant.language.signal-red.gmo",
+      "settings": {
+        "foreground": "#d63031",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Signal BLUE",
+      "scope": "constant.language.signal-blue.gmo",
+      "settings": {
+        "foreground": "#2c6fbb",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Signal YELLOW",
+      "scope": "constant.language.signal-yellow.gmo",
+      "settings": {
+        "foreground": "#b8860b",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "BUY Action",
+      "scope": "entity.name.function.action.buy.gmo",
+      "settings": {
+        "foreground": "#16825d",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "SELL Action",
+      "scope": "entity.name.function.action.sell.gmo",
+      "settings": {
+        "foreground": "#c72e2e",
+        "fontStyle": "bold"
+      }
+    },
+    {
+      "name": "Functions (FIELD, LAST_CONFIDENCE, ...)",
+      "scope": "support.function.gmo",
+      "settings": {
+        "foreground": "#a8832e"
+      }
+    },
+    {
+      "name": "Variables (SIGNAL, PRICE, ...)",
+      "scope": "variable.other.gmo",
+      "settings": {
+        "foreground": "#5a4fcf"
+      }
+    },
+    {
+      "name": "Numbers",
+      "scope": "constant.numeric.gmo",
+      "settings": {
+        "foreground": "#0a7b83"
+      }
+    },
+    {
+      "name": "Strings",
+      "scope": "string.quoted.single.gmo",
+      "settings": {
+        "foreground": "#6b4f2e"
+      }
+    },
+    {
+      "name": "Operators",
+      "scope": "keyword.operator.gmo",
+      "settings": {
+        "foreground": "#7a7f87"
+      }
+    },
+    {
+      "name": "Logical Operators (AND, OR, NOT)",
+      "scope": "keyword.operator.logical.gmo",
+      "settings": {
+        "foreground": "#0a2b5c",
+        "fontStyle": "bold"
+      }
+    }
+  ]
+}

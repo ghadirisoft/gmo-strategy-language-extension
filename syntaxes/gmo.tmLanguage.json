@@ -1,0 +1,111 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "GMO Strategy",
+  "scopeName": "source.gmo",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#signals" },
+    { "include": "#actions" },
+    { "include": "#functions" },
+    { "include": "#variables" },
+    { "include": "#numbers" },
+    { "include": "#strings" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.gmo",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.gmo",
+          "match": "\\b(STRATEGY|VERSION|DESCRIPTION|PARAMETERS|RULES|PRIORITY|IF|END)\\b"
+        }
+      ]
+    },
+    "signals": {
+      "patterns": [
+        {
+          "name": "constant.language.signal-green.gmo",
+          "match": "\\bGREEN\\b"
+        },
+        {
+          "name": "constant.language.signal-red.gmo",
+          "match": "\\bRED\\b"
+        },
+        {
+          "name": "constant.language.signal-blue.gmo",
+          "match": "\\bBLUE\\b"
+        },
+        {
+          "name": "constant.language.signal-yellow.gmo",
+          "match": "\\bYELLOW\\b"
+        }
+      ]
+    },
+    "actions": {
+      "patterns": [
+        {
+          "name": "entity.name.function.action.buy.gmo",
+          "match": "\\bBUY\\b"
+        },
+        {
+          "name": "entity.name.function.action.sell.gmo",
+          "match": "\\bSELL\\b"
+        }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        {
+          "name": "support.function.gmo",
+          "match": "\\b(FIELD|LAST_CONFIDENCE|LAST_PRICE|LAST_DATETIME|MIN_CONFIDENCE|MIN_PRICE|MAX_CONFIDENCE|MAX_PRICE|AVG_CONFIDENCE|AVG_PRICE)\\b"
+        }
+      ]
+    },
+    "variables": {
+      "patterns": [
+        {
+          "name": "variable.other.gmo",
+          "match": "\\b(SIGNAL|CONFIDENCE|PRICE|GmoML|MARKET|FACTOR|DATETIME)\\b"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.gmo",
+          "match": "\\b\\d+(\\.\\d+)?(G)?\\b"
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.gmo",
+          "begin": "'",
+          "end": "'"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.gmo",
+          "match": "(->|>=|<=|<>|[=<>+\\-*/:])"
+        },
+        {
+          "name": "keyword.operator.logical.gmo",
+          "match": "\\b(AND|OR|NOT)\\b"
+        }
+      ]
+    }
+  }
+}
