@@ -377,10 +377,10 @@ END
 ## 🖼️ Screenshots
 
 ### Editor with Syntax Highlighting
-![Editor Screenshot](https://www.ghadirinews.ir/images/v2/gmo/vscode-editor.png)
+![Editor Screenshot](./vscode-editor.png)
 
 ### Backtest Result Panel
-![Backtest Result](https://www.ghadirinews.ir/images/v2/gmo/vscode-backtest.png)
+![Backtest Result](./vscode-backtest.png)
 
 ---
 
