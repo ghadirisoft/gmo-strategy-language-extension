@@ -2,12 +2,12 @@
 
 > The official VS Code extension for writing, testing, and backtesting gold trading strategies — right inside your editor.
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.1.0-blue)
 ![VS Code](https://img.shields.io/badge/VS%20Code-%5E1.80.0-007ACC)
 ![Language](https://img.shields.io/badge/language-GMO-d4a843)
 ![License](https://img.shields.io/badge/license-Proprietary-blue)
 
-**GMO Strategy Language (GML)** is a domain-specific language (DSL) designed for defining gold trading strategies in the **Smart Gold Trading Decision Assistant** ecosystem. This extension brings full language support, syntax highlighting, and backtesting capabilities directly into VS Code.
+**GMO Strategy Language (GmoSL)** is a domain-specific language (DSL) designed for defining gold trading strategies in the **Smart Gold Trading Decision Assistant** ecosystem. This extension brings full language support, syntax highlighting, and backtesting capabilities directly into VS Code.
 
 Whether you're a beginner writing your first trading rule or an experienced trader building advanced multi-condition strategies, this extension makes the process fast, comfortable, and reliable.
 
@@ -41,14 +41,16 @@ Each signal includes a **confidence percentage** and a **performance index**, he
 
 ### 🎨 Smart Syntax Highlighting
 - Color-coded keywords, signals, functions, and values
+- **Works in any VS Code theme** — colors apply in the default Light, Dark, and High Contrast themes as well as the dedicated GMO theme
 - Automatic line numbering
 - Live cursor position indicator (Ln, Col)
-- Dedicated GMO theme (light and dark variants)
+- Dedicated GMO theme (light variant)
 - `.gmo` file recognition out of the box
 
 ### ⚡ Ready-to-Use Snippets
 - Complete strategy template in one command
 - Snippets for `BUY`, `SELL`, `IF`, and all statistical functions
+- One-shot insertion of the full **signal record field set** (`gmo-signal-record`)
 - Auto-completion with `Ctrl+Space`
 
 ### 🧪 One-Click Backtesting
@@ -66,6 +68,13 @@ Each signal includes a **confidence percentage** and a **performance index**, he
 - Every `.gmo` file lives in your own project
 - Use Git to version-control your strategies
 - No data is sent automatically without your action
+
+### 🧹 Auto Formatting
+- **Format on save** (via VS Code's built-in `editor.formatOnSave`)
+- **Manual format**: `Shift+Alt+F` (`Shift+Option+F` on macOS)
+- Aligns `=` in `PARAMETERS` and `->` in `RULES`
+- Normalizes operator spacing, trailing spaces, and indentation
+- Configurable via `gmo.format.*` settings
 
 ---
 
@@ -168,6 +177,8 @@ Each signal record contains 9 fields:
 | `7` | Market regime | Number | `-1`, `0`, `1` |
 | `8` | Signal trigger factor | Number | `0`, `1`, `2` |
 
+> 💡 **Tip:** Use the `gmo-signal-record` snippet to insert this full set of fields in one go.
+
 ### Statistical Functions
 
 | Function | Description |
@@ -225,6 +236,7 @@ Type the prefix and press `Tab`:
 | `gmo-sell-multi` | Multi-source sell |
 | `gmo-last-conf` | `LAST_CONFIDENCE(GREEN)` |
 | `gmo-last-dt` | `LAST_DATETIME(RED, 36H)` |
+| `gmo-signal-record` | Full standard signal field set (`SIGNAL`, `CONFIDENCE`, `DATETIME`, `PRICE`, `GmoML`, `MARKET`, `FACTOR`) |
 
 ---
 
@@ -235,7 +247,7 @@ Type the prefix and press `Tab`:
 | `GMO: Login` | — | Log into your account |
 | `GMO: Logout` | — | Log out |
 | `GMO: Run Backtest` | `Ctrl+Shift+B` | Run a backtest simulation |
-| `GMO: Show Token` | — | Debug: view authentication status |
+| `GMO: Format Document` | `Shift+Alt+F` | Auto-format the current strategy |
 
 > 💡 You can also **right-click** inside any `.gmo` file and choose **"GMO: Run Backtest"**.
 
@@ -365,10 +377,10 @@ END
 ## 🖼️ Screenshots
 
 ### Editor with Syntax Highlighting
-![Editor Screenshot](./vscode-editor.png)
+![Editor Screenshot](https://www.ghadirinews.ir/images/v2/gmo/vscode-editor.png)
 
 ### Backtest Result Panel
-![Backtest Result](./vscode-backtest.png)
+![Backtest Result](https://www.ghadirinews.ir/images/v2/gmo/vscode-backtest.png)
 
 ---
 
@@ -381,9 +393,14 @@ END
 3. If it shows Plain Text: `Ctrl+Shift+P` → `Change Language Mode` → `GMO Strategy`
 4. If it still doesn't work: reload VS Code (`Ctrl+Shift+P` → `Reload Window`)
 
-### ❓ The GMO theme isn't applying
+### ❓ The colors look wrong / washed out in my current theme
 
-Press `Ctrl+K`, then `Ctrl+T`, and choose **GMO Strategy** from the list.
+Since version **1.0.1**, the GMO syntax colors are applied to VS Code's built-in themes automatically via `configurationDefaults`. If colors still look off:
+
+1. Open `Settings` (`Ctrl+,`)
+2. Search for **Token Color Customizations**
+3. Make sure no other extension is overriding the GMO scopes
+4. Alternatively, switch to the dedicated theme: `Ctrl+K` → `Ctrl+T` → **GMO Strategy**
 
 ### ❓ `Ctrl+Shift+B` doesn't work
 
@@ -406,6 +423,12 @@ Use the Command Palette instead: `Ctrl+Shift+P` → type `GMO` → **GMO: Run Ba
 - Make sure the file has the `.gmo` extension
 - Press `Ctrl+Space` manually to open the snippet menu
 - Reload VS Code
+
+---
+
+## 📋 Changelog
+
+See the full [CHANGELOG.md](./CHANGELOG.md) for version history and release notes.
 
 ---
 
@@ -438,6 +461,7 @@ Trading Decision Assistant platform.
 | [📚 GMO Strategy Reference](https://www.ghadirinews.ir/news/economy/bank/tools/gold-market/strategy/reference/) | Full function and keyword reference |
 | [📊 GMO Panel](https://www.ghadirinews.ir/news/economy/bank/tools/gold-market/online/) | Live signals and analyses |
 | [🧪 Online Backtest Simulator](https://www.ghadirinews.ir/news/economy/bank/tools/gold-market/backtest/) | Browser-based simulator |
+| [📋 Changelog](./CHANGELOG.md) | Version history and release notes |
 
 > 🌐 **Persian documentation** is available in the [GMO Strategy Reference](https://www.ghadirinews.ir/news/economy/bank/tools/gold-market/strategy/reference/).
 

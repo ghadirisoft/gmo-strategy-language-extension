@@ -11,7 +11,7 @@
         "  CONFIDENCE = FIELD(1)  // درصد اعتماد",
         "  DATETIME   = FIELD(2) + ' ' + FIELD(4)  // تاریخ + ساعت سیگنال",
         "  PRICE      = FIELD(5)  // قیمت",
-        "  GmoML      = FIELD(6)  // پیشنهاد GmoML",
+        "  GMOML      = FIELD(6)  // پیشنهاد Gmo Machine learning",
         "  MARKET     = FIELD(7)  // وضعیت بازار",
         "  FACTOR     = FIELD(8)  // عامل رخداد سیگنال",
         "",
@@ -26,12 +26,12 @@
     },
     "Buy Rule": {
       "prefix": "gmo-buy",
-      "body": ["SIGNAL = ${1:GREEN} -> BUY(${2:1G})${3: IF CONFIDENCE > 70}"],
+      "body": ["SIGNAL = ${1:GREEN} -> BUY(${2:1G}) IF ${3:CONFIDENCE > 70}"],
       "description": "قانون خرید"
     },
     "Sell Rule": {
       "prefix": "gmo-sell",
-      "body": ["SIGNAL = ${1:RED} -> SELL(${2:1G})${3: IF PRICE > 5000000}"],
+      "body": ["SIGNAL = ${1:RED} -> SELL(${2:1G}) IF ${3:PRICE > 5000000}"],
       "description": "قانون فروش"
     },
     "Buy Multi-Source": {
@@ -53,5 +53,18 @@
       "prefix": "gmo-last-dt",
       "body": ["LAST_DATETIME(${1:RED}, ${2:36H})"],
       "description": "آخرین تاریخ/ساعت سیگنال با offset"
-    }
+    },
+    "Signal Record Fields": {
+      "prefix": "gmo-signal-record",
+      "body": [
+        "  SIGNAL     = FIELD(0)  // نام سیگنال",
+        "  CONFIDENCE = FIELD(1)  // درصد اعتماد",
+        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)  // تاریخ + ساعت سیگنال",
+        "  PRICE      = FIELD(5)  // قیمت",
+        "  GMOML      = FIELD(6)  // پیشنهاد GMO Machine learning",
+        "  MARKET     = FIELD(7)  // وضعیت بازار",
+        "  FACTOR     = FIELD(8)  // عامل رخداد سیگنال"
+      ],
+      "description": "فیلدهای استاندارد سیگنال (SIGNAL، CONFIDENCE، DATETIME، PRICE، ...)"
+    }    
   }

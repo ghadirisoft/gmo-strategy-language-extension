@@ -2,7 +2,7 @@
   "name": "gmo-strategy",
   "displayName": "GMO Strategy Language",
   "description": "GMO Strategy language support + simulation execution",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icon": "icon.png",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
@@ -17,13 +17,14 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Programming Languages", "Snippets"],
+  "categories": ["Programming Languages", "Snippets", "Formatters"],
   "activationEvents": [
     "onLanguage:gmo",
     "onCommand:gmo.runBacktest",
     "onCommand:gmo.login",
     "onCommand:gmo.logout",
-    "onCommand:gmo.debugToken"
+    "onCommand:gmo.debugToken",
+    "onCommand:gmo.formatDocument"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -62,8 +63,8 @@
         "title": "GMO: Logout"
       },
       {
-        "command": "gmo.debugToken",
-        "title": "GMO: Show Token"
+        "command": "gmo.formatDocument",
+        "title": "GMO: Format Document"
       }
     ],
     "menus": {
@@ -72,6 +73,17 @@
           "when": "editorLangId == gmo",
           "command": "gmo.runBacktest",
           "group": "navigation"
+        },
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.formatDocument",
+          "group": "1_modification"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "gmo.formatDocument",
+          "when": "editorLangId == gmo"
         }
       ]
     },
@@ -80,6 +92,12 @@
         "command": "gmo.runBacktest",
         "key": "ctrl+shift+b",
         "mac": "cmd+shift+b",
+        "when": "editorLangId == gmo"
+      },
+      {
+        "command": "gmo.formatDocument",
+        "key": "shift+alt+f",
+        "mac": "shift+option+f",
         "when": "editorLangId == gmo"
       }
     ],
@@ -90,9 +108,103 @@
         "path": "./themes/gmo-color-theme.json"
       }
     ],
+    "configuration": {
+      "title": "GMO Strategy",
+      "properties": {
+        "gmo.format.indentSize": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 8,
+          "description": "تعداد فاصله برای تورفتگی (اگر Use Tabs فعال نباشد)."
+        },
+        "gmo.format.useTabs": {
+          "type": "boolean",
+          "default": false,
+          "description": "استفاده از Tab به‌جای فاصله برای تورفتگی."
+        },
+        "gmo.format.alignAssignments": {
+          "type": "boolean",
+          "default": true,
+          "description": "تراز کردن علامت '=' در بخش PARAMETERS."
+        },
+        "gmo.format.alignArrow": {
+          "type": "boolean",
+          "default": true,
+          "description": "تراز کردن '->' در بخش RULES."
+        },
+        "gmo.format.uppercaseKeywords": {
+          "type": "boolean",
+          "default": true,
+          "description": "تبدیل کلیدواژه‌ها و نام متغیرها به حروف بزرگ."
+        },
+        "gmo.format.addSpaceAroundOperators": {
+          "type": "boolean",
+          "default": true,
+          "description": "قرار دادن فاصله یکنواخت دور عملگرها."
+        },
+        "gmo.format.trimTrailingSpaces": {
+          "type": "boolean",
+          "default": true,
+          "description": "حذف فاصله‌های انتهای خطوط."
+        },
+        "gmo.format.finalNewline": {
+          "type": "boolean",
+          "default": true,
+          "description": "افزودن یک خط خالی در انتهای فایل."
+        },
+        "gmo.runBacktest.autoFormat": {
+          "type": "boolean",
+          "default": true,
+          "description": "قالب‌بندی خودکار استراتژی قبل از ارسال به شبیه‌ساز."
+        }
+      }
+    },
     "configurationDefaults": {
       "editor.tokenColorCustomizations": {
         "textMateRules": [
+          {
+            "scope": "comment.line.double-slash.gmo",
+            "settings": {
+              "foreground": "#8a94a3",
+              "fontStyle": "italic"
+            }
+          },
+          {
+            "scope": "keyword.control.gmo",
+            "settings": {
+              "foreground": "#af00db",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "constant.language.signal-green.gmo",
+            "settings": {
+              "foreground": "#1f9d55",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "constant.language.signal-red.gmo",
+            "settings": {
+              "foreground": "#d63031",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "constant.language.signal-blue.gmo",
+            "settings": {
+              "foreground": "#2c6fbb",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "constant.language.signal-yellow.gmo",
+            "settings": {
+              "foreground": "#b8860b",
+              "fontStyle": "bold"
+            }
+          },
           {
             "scope": "entity.name.function.action.buy.gmo",
             "settings": {
@@ -104,6 +216,43 @@
             "scope": "entity.name.function.action.sell.gmo",
             "settings": {
               "foreground": "#c72e2e",
+              "fontStyle": "bold"
+            }
+          },
+          {
+            "scope": "support.function.gmo",
+            "settings": {
+              "foreground": "#a8832e"
+            }
+          },
+          {
+            "scope": "variable.other.gmo",
+            "settings": {
+              "foreground": "#5a4fcf"
+            }
+          },
+          {
+            "scope": "constant.numeric.gmo",
+            "settings": {
+              "foreground": "#0a7b83"
+            }
+          },
+          {
+            "scope": "string.quoted.single.gmo",
+            "settings": {
+              "foreground": "#6b4f2e"
+            }
+          },
+          {
+            "scope": "keyword.operator.gmo",
+            "settings": {
+              "foreground": "#7a7f87"
+            }
+          },
+          {
+            "scope": "keyword.operator.logical.gmo",
+            "settings": {
+              "foreground": "#0a2b5c",
               "fontStyle": "bold"
             }
           }

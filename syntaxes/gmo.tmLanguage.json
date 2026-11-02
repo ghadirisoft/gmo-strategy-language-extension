@@ -74,7 +74,7 @@
       "patterns": [
         {
           "name": "variable.other.gmo",
-          "match": "\\b(SIGNAL|CONFIDENCE|PRICE|GmoML|MARKET|FACTOR|DATETIME)\\b"
+          "match": "\\b(SIGNAL|CONFIDENCE|PRICE|GMOML|MARKET|FACTOR|DATETIME)\\b"
         }
       ]
     },
