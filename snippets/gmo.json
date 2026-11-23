@@ -3,67 +3,191 @@
       "prefix": "gmo-strategy",
       "body": [
         "STRATEGY ${1:MyStrategy}",
+        "",
         "VERSION ${2:1.0}",
         "DESCRIPTION: ${3:توضیح اختیاری}",
         "",
         "PARAMETERS:",
-        "  SIGNAL     = FIELD(0)  // نام سیگنال",
-        "  CONFIDENCE = FIELD(1)  // درصد اعتماد",
-        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)  // تاریخ + ساعت سیگنال",
-        "  PRICE      = FIELD(5)  // قیمت",
-        "  GMOML      = FIELD(6)  // پیشنهاد Gmo Machine learning",
-        "  MARKET     = FIELD(7)  // وضعیت بازار",
-        "  FACTOR     = FIELD(8)  // عامل رخداد سیگنال",
+        "  SIGNAL     = FIELD(0)",
+        "  CONFIDENCE = FIELD(1)",
+        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)",
+        "  PRICE      = FIELD(5)",
+        "  GMOML      = FIELD(6)",
+        "  MARKET     = FIELD(7)",
+        "  FACTOR     = FIELD(8)",
+        "  TRADERS    = FIELD(9)",
+        "  PIVOTPOINT = FIELD(10)",
         "",
         "RULES:",
         "  SIGNAL = GREEN -> BUY(${4:1G})",
         "  SIGNAL = BLUE -> BUY(${5:1G})",        
         "  SIGNAL = YELLOW   -> SELL(${6:1G})",
         "  SIGNAL = RED   -> SELL(${7:1G})",                
+        "",
         "END"
       ],
       "description": "قالب پایه‌ی استراتژی GMO"
-    },
+    },"Strategy Token Template": {
+      "prefix": "gmo-strategy-token",
+      "body": [
+        "STRATEGY ${1:MyStrategy}",
+        "",
+        "VERSION token",
+        "REVISION ${2:1.0}",
+        "",
+        "DESCRIPTION: ${3:توضیح اختیاری}",
+        "PUBLISHER: ${4:نام ناشر در  Strategy Hub}",            
+        "",
+        "TOKEN: ${5:توکن ۶۴ کاراکتری دریافت شده از  Strategy Hub}",
+        "",
+        "END"
+      ],
+      "description": "قالب پایه‌ی استراتژی مبتنی بر توکن"
+    },   
     "Buy Rule": {
       "prefix": "gmo-buy",
-      "body": ["SIGNAL = ${1:GREEN} -> BUY(${2:1G}) IF ${3:CONFIDENCE > 70}"],
+      "body": ["SIGNAL = ${1|GREEN,BLUE,YELLOW,RED|} -> BUY(${2:1G}) IF ${3:CONFIDENCE > 70}"],
       "description": "قانون خرید"
     },
     "Sell Rule": {
       "prefix": "gmo-sell",
-      "body": ["SIGNAL = ${1:RED} -> SELL(${2:1G}) IF ${3:PRICE > 5000000}"],
+      "body": ["SIGNAL = ${1|GREEN,BLUE,YELLOW,RED|} -> SELL(${2:1G}) IF ${3:PRICE > 5000000}"],
       "description": "قانون فروش"
     },
     "Buy Multi-Source": {
       "prefix": "gmo-buy-multi",
-      "body": ["SIGNAL = GREEN -> BUY(BLUE:${1:0.5G}, GREEN:${2:0.5G})"],
+      "body": ["SIGNAL = ${1|GREEN,BLUE,YELLOW,RED|} -> BUY(${2|GREEN,BLUE,YELLOW,RED|}:${3:0.5G}, ${4|GREEN,BLUE,YELLOW,RED|}:${5:0.5G})"],
       "description": "خرید در چند منبع"
     },
     "Sell Multi-Source": {
       "prefix": "gmo-sell-multi",
-      "body": ["SIGNAL = RED -> SELL(BLUE:${1:0.5G}, GREEN:${2:1G})"],
+      "body": ["SIGNAL = ${1|GREEN,BLUE,YELLOW,RED|} -> SELL(${2|GREEN,BLUE,YELLOW,RED|}:${3:0.5G}, ${4|GREEN,BLUE,YELLOW,RED|}:${5:0.5G})"],
       "description": "فروش از چند منبع"
     },
+
     "Last Confidence": {
       "prefix": "gmo-last-conf",
-      "body": ["LAST_CONFIDENCE(${1:GREEN})"],
+      "body": ["LAST_CONFIDENCE(${1|GREEN,BLUE,YELLOW,RED|})"],
       "description": "آخرین اعتماد سیگنال"
     },
+    "Last PRICE": {
+      "prefix": "gmo-last-price",
+      "body": ["LAST_PRICE(${1|GREEN,BLUE,YELLOW,RED|})"],
+      "description": "آخرین قیمت سیگنال"
+    },    
     "Last Datetime": {
       "prefix": "gmo-last-dt",
-      "body": ["LAST_DATETIME(${1:RED}, ${2:36H})"],
+      "body": ["LAST_DATETIME(${1|GREEN,BLUE,YELLOW,RED|}, ${2:36H})"],
       "description": "آخرین تاریخ/ساعت سیگنال با offset"
     },
-    "Signal Record Fields": {
+
+    "Max PRICE": {
+      "prefix": "gmo-max-pricef",
+      "body": ["MAX_PRICE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "بیشترین اعتماد سیگنال در N سیگنال آخر"
+    },    
+    "Min PRICE": {
+      "prefix": "gmo-min-price",
+      "body": ["MIN_PRICE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "کمترین اعتماد سیگنال در N سیگنال آخر"
+    },      
+    "AVG PRICE": {
+      "prefix": "gmo-avg-price",
+      "body": ["AVG_PRICE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "میانگین اعتماد N سیگنال آخر"
+    },   
+
+
+    "Max Confidence": {
+      "prefix": "gmo-max-conf",
+      "body": ["MAX_CONFIDENCE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "بیشترین اعتماد سیگنال در N سیگنال آخر"
+    },    
+    "Min Confidence": {
+      "prefix": "gmo-min-conf",
+      "body": ["MIN_CONFIDENCE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "کمترین اعتماد سیگنال در N سیگنال آخر"
+    },      
+    "AVG CONFIDENCE": {
+      "prefix": "gmo-avg-conf",
+      "body": ["AVG_CONFIDENCE(${1|GREEN,BLUE,YELLOW,RED|}, ${2:5})"],
+      "description": "میانگین اعتماد N سیگنال آخر"
+    },         
+
+
+    "Signal Field(Name)": {
+      "prefix": "gmo-signal-field-name",
+      "body": ["FIELD(0)"],
+      "description": "نام سیگنال"
+    }, 
+    "Signal Field(CONFIDENCE)": {
+      "prefix": "gmo-signal-field-conf",
+      "body": ["FIELD(1)"],
+      "description": "درصد اعتماد"
+    },    
+    "Signal Field(Date)": {
+      "prefix": "gmo-signal-field-date",
+      "body": ["FIELD(2)"],
+      "description": "تاریخ میلادی ارسال سیگنال"
+    },    
+    "Signal Field(Hijri Date)": {
+      "prefix": "gmo-signal-field-date-hijri",
+      "body": ["FIELD(3)"],
+      "description": "تاریخ هجری شمسی ارسال سیگنال"
+    },
+    "Signal Field(TIME)": {
+      "prefix": "gmo-signal-field-time",
+      "body": ["FIELD(4)"],
+      "description": "ساعت ارسال سیگنال"
+    },     
+    "Signal Field(DATETIME)": {
+      "prefix": "gmo-signal-field-date-time",
+      "body": ["FIELD(2) + ' ' + FIELD(4)"],
+      "description": "زمان ارسال سیگنال"
+    },
+    "Signal Field(PRICE)": {
+      "prefix": "gmo-signal-field-price",
+      "body": ["FIELD(5)"],
+      "description": "قیمت سیگنال"
+    },
+    "Signal Field(GMOML)": {
+      "prefix": "gmo-signal-field-gmoml",
+      "body": ["FIELD(6)"],
+      "description": "پیشنهاد GMO Machine learning"
+    },
+    "Signal Field(MARKET)": {
+      "prefix": "gmo-signal-field-market",
+      "body": ["FIELD(7)"],
+      "description": "وضعیت بازار"
+    },
+    "Signal Field(FACTOR)": {
+      "prefix": "gmo-signal-field-factor",
+      "body": ["FIELD(8)"],
+      "description": "عامل رخداد سیگنال"
+    },              
+    "Signal Field(TRADERS)": {
+      "prefix": "gmo-signal-field-traders",
+      "body": ["FIELD(9)"],
+      "description": "وضعیت معامله‌گران"
+    },              
+    "Signal Field(PIVOTPOINT)": {
+      "prefix": "gmo-signal-field-pivotpoint",
+      "body": ["FIELD(10)"],
+      "description": "فاصله از سطح محوری"
+    },              
+    "Signal Record Fields Template": {
       "prefix": "gmo-signal-record",
       "body": [
-        "  SIGNAL     = FIELD(0)  // نام سیگنال",
-        "  CONFIDENCE = FIELD(1)  // درصد اعتماد",
-        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)  // تاریخ + ساعت سیگنال",
-        "  PRICE      = FIELD(5)  // قیمت",
-        "  GMOML      = FIELD(6)  // پیشنهاد GMO Machine learning",
-        "  MARKET     = FIELD(7)  // وضعیت بازار",
-        "  FACTOR     = FIELD(8)  // عامل رخداد سیگنال"
+        "PARAMETERS:",        
+        "  SIGNAL     = FIELD(0)",
+        "  CONFIDENCE = FIELD(1)",
+        "  DATETIME   = FIELD(2) + ' ' + FIELD(4)",
+        "  PRICE      = FIELD(5)",
+        "  GMOML      = FIELD(6)",
+        "  MARKET     = FIELD(7)",
+        "  FACTOR     = FIELD(8)",
+        "  TRADERS    = FIELD(9)",
+        "  PIVOTPOINT = FIELD(10)"        
       ],
       "description": "فیلدهای استاندارد سیگنال (SIGNAL، CONFIDENCE، DATETIME، PRICE، ...)"
     }    

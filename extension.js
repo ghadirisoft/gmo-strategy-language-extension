@@ -1,6 +1,48 @@
+// extension.js
+'use strict';
+
 const vscode = require('vscode');
 const https = require('https');
 const formatter = require('./formatter');
+const {
+  registerDefinitionProvider,
+} = require('./providers/definition-provider');
+const { registerHoverProvider } = require('./providers/hover-provider');
+const { registerReferenceProvider } = require('./providers/reference-provider');
+const { registerRenameProvider } = require('./providers/rename-provider');
+const {
+  registerDiagnosticProvider,
+} = require('./providers/diagnostic-provider');
+const {
+  registerCompletionProvider,
+} = require('./providers/completion-provider');
+const {
+  registerCodeActionProvider,
+} = require('./providers/code-action-provider');
+const {
+  registerDocumentSymbolProvider,
+} = require('./providers/document-symbol-provider');
+const { registerFoldingProvider } = require('./providers/folding-provider');
+const {
+  registerSignatureHelpProvider,
+} = require('./providers/signature-help-provider');
+const {
+  registerInlayHintsProvider,
+} = require('./providers/inlay-hints-provider');
+// ===== Hub =====
+const { HubClient } = require('./hub/hub-client');
+const { HubCache } = require('./hub/hub-cache');
+const { HubSession } = require('./hub/hub-session');
+const { HubTreeProvider } = require('./views/hub-tree-provider');
+const { hubRefresh } = require('./commands/hub-refresh');
+const { hubOpenStrategy } = require('./commands/hub-open-strategy');
+const { hubSaveToHub } = require('./commands/hub-save-to-hub');
+const { hubRefreshFromHub } = require('./commands/hub-refresh-from-hub');
+const { hubDisconnect } = require('./commands/hub-disconnect');
+const { hubShowDetails } = require('./commands/hub-show-details');
+
+// ===== Strategy Runner (اجرای استراتژی) =====
+const { runStrategyCommand } = require('./strategy/strategy-runner');
 
 // ============================================================
 // آدرس‌های سرور
@@ -10,10 +52,16 @@ const BACKTEST_URL = 'https://www.ghadirinews.ir/cmd/gmo/v1/backtest/';
 const PARSER_URL = 'https://www.ghadirinews.ir/cmd/gmo/v1/STRATEGY/parser/';
 
 // ============================================================
-// کلیدهای ذخیره‌سازی
+// کلیدهای ذخیره‌سازی (هویت واحد)
 // ============================================================
 const TOKEN_KEY = 'gmo.token';
 const PHONE_KEY = 'gmo.phone';
+
+// ============================================================
+// scope ماژول برای دسترسی logout به Hub
+// ============================================================
+let hubDeps = null;
+let updateHubStatusFn = null;
 
 // ============================================================
 // Helper: درخواست HTTPS
@@ -37,11 +85,10 @@ function httpsPost(url, bodyStr, extraHeaders) {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         'Content-Length': Buffer.byteLength(bodyStr, 'utf8'),
-        'User-Agent': 'GMO-VSCode-Extension/1.1.0',
+        'User-Agent': 'GMO-VSCode-Extension/2.0.0',
         Accept: '*/*',
         Connection: 'close',
       },
-      rejectUnauthorized: false,
       timeout: 60000,
     };
 
@@ -114,14 +161,17 @@ async function clearToken(context) {
 }
 
 // ============================================================
-// Helper: خواندن تنظیمات قالب‌بندی (با احترام به تنظیمات ادیتور)
+// Helper: خواندن تنظیمات قالب‌بندی
 // ============================================================
 function getFormatOptions(document) {
   const cfg = vscode.workspace.getConfiguration('gmo.format');
   const editorCfg = vscode.workspace.getConfiguration('editor', document);
 
   const tabSize = editorCfg.get('tabSize', cfg.get('indentSize', 2));
-  const insertSpaces = editorCfg.get('insertSpaces', !cfg.get('useTabs', false));
+  const insertSpaces = editorCfg.get(
+    'insertSpaces',
+    !cfg.get('useTabs', false)
+  );
 
   return {
     indentSize: tabSize,
@@ -131,17 +181,10 @@ function getFormatOptions(document) {
     uppercaseKeywords: cfg.get('uppercaseKeywords', true),
     addSpaceAroundOperators: cfg.get('addSpaceAroundOperators', true),
     trimTrailingSpaces: cfg.get('trimTrailingSpaces', true),
-    emptyLineBetweenBlocks: cfg.get('emptyLineBetweenBlocks', true),
     finalNewline: cfg.get('finalNewline', true),
   };
 }
 
-// ============================================================
-// Helper: قالب‌بندی خودکار یک ادیتور فعال
-//   - true برگرداند اگر تغییری اعمال شد
-//   - false برگرداند اگر متن از قبل فرمت‌شده بود
-//   - در صورت خطا throw می‌کند
-// ============================================================
 async function formatActiveDocument(editor) {
   if (!editor || editor.document.languageId !== 'gmo') return false;
 
@@ -172,7 +215,7 @@ async function formatActiveDocument(editor) {
 }
 
 // ============================================================
-// دستور ورود
+// ورود — هویت واحد (بک‌تست + Hub)
 // ============================================================
 async function loginCommand(context) {
   var phone = await vscode.window.showInputBox({
@@ -244,9 +287,21 @@ async function loginCommand(context) {
         await context.secrets.store(TOKEN_KEY, data.token);
         await context.secrets.store(PHONE_KEY, phone);
 
-        vscode.window.showInformationMessage('✅ ورود موفق به GMO');
+        vscode.window.showInformationMessage('✅ ورود موفق');
 
         await updateStatusBar(context);
+
+        // ⭐ هویت واحد: Hub هم تازه شود
+        if (hubDeps && hubDeps.tree) {
+          try {
+            await hubDeps.tree.forceReload();
+          } catch (e) {
+            console.warn(
+              '[GMO Hub] reload after login failed:',
+              e && e.message
+            );
+          }
+        }
       } catch (err) {
         console.error('[GMO] Login error:', err.message);
         vscode.window.showErrorMessage('❌ خطا در ورود: ' + err.message);
@@ -257,12 +312,45 @@ async function loginCommand(context) {
 }
 
 // ============================================================
-// دستور خروج
+// خروج — هویت واحد (بک‌تست + Hub)
 // ============================================================
 async function logoutCommand(context) {
+  const confirm = await vscode.window.showWarningMessage(
+    'آیا قصد خروج از حساب را دارید؟',
+    { modal: true },
+    'خروج'
+  );
+  if (confirm !== 'خروج') return;
+
   await clearToken(context);
   await updateStatusBar(context);
-  vscode.window.showInformationMessage('از حساب خارج شدید.');
+
+  // ⭐ Hub را کامل ریست کن
+  if (hubDeps) {
+    if (hubDeps.session && hubDeps.session.entries) {
+      try {
+        hubDeps.session.entries.clear();
+      } catch (e) {
+        console.warn('[GMO Hub] session clear failed:', e && e.message);
+      }
+    }
+    if (hubDeps.tree) {
+      try {
+        hubDeps.tree.reset('not-logged-in');
+      } catch (e) {
+        console.warn('[GMO Hub] tree reset failed:', e && e.message);
+      }
+    }
+  }
+  if (typeof updateHubStatusFn === 'function') {
+    try {
+      updateHubStatusFn();
+    } catch (e) {
+      console.warn('[GMO Hub] status update failed:', e && e.message);
+    }
+  }
+
+  vscode.window.showInformationMessage('از حساب GMO خارج شدید.');
 }
 
 // ============================================================
@@ -300,10 +388,114 @@ function activate(context) {
   context.subscriptions.push(statusBarItem);
   updateStatusBar(context);
 
-  // ===== ثبت فرمت‌کننده (DocumentFormattingEditProvider) =====
+  // ===== Language providers =====
   formatter.registerFormatter(context);
+  registerDefinitionProvider(context);
+  registerHoverProvider(context);
+  registerReferenceProvider(context);
+  registerRenameProvider(context);
+  registerDiagnosticProvider(context);
+  registerCompletionProvider(context);
+  registerCodeActionProvider(context);
+  registerDocumentSymbolProvider(context);
+  registerFoldingProvider(context);
+  registerSignatureHelpProvider(context);
+  registerInlayHintsProvider(context);
 
-  // ===== دستور Format دستی =====
+  // ============================================================
+  // Hub Integration — هویت واحد
+  // ============================================================
+  const hubEnabled = vscode.workspace
+    .getConfiguration()
+    .get('gmo.hub.enabled', true);
+
+  if (hubEnabled) {
+    const hubClient = new HubClient(context);
+    const hubCache = new HubCache();
+    const hubSession = new HubSession();
+
+    const treeProvider = new HubTreeProvider({
+      client: hubClient,
+      cache: hubCache,
+    });
+
+    const treeView = vscode.window.createTreeView('gmoHubView', {
+      treeDataProvider: treeProvider,
+      showCollapseAll: true,
+    });
+    context.subscriptions.push(treeView);
+
+    hubDeps = {
+      context,
+      client: hubClient,
+      cache: hubCache,
+      session: hubSession,
+      tree: treeProvider,
+    };
+
+    // ===== Register Hub commands (بدون login/logout) =====
+    context.subscriptions.push(
+      vscode.commands.registerCommand('gmo.hub.refresh', () =>
+        hubRefresh(hubDeps)
+      ),
+      vscode.commands.registerCommand('gmo.hub.openStrategy', (s) =>
+        hubOpenStrategy(hubDeps, s)
+      ),
+      vscode.commands.registerCommand('gmo.hub.saveToHub', () =>
+        hubSaveToHub(hubDeps)
+      ),
+      vscode.commands.registerCommand('gmo.hub.refreshFromHub', (s) =>
+        hubRefreshFromHub(hubDeps, s)
+      ),
+      vscode.commands.registerCommand('gmo.hub.disconnect', () =>
+        hubDisconnect(hubDeps)
+      ),
+      vscode.commands.registerCommand('gmo.hub.showDetails', (s) =>
+        hubShowDetails(hubDeps, s)
+      )
+    );
+
+    // ===== بارگذاری اولیه (اگر توکن هست) =====
+    treeProvider.load().catch((err) => {
+      console.error('[GMO Hub] load error:', err);
+    });
+
+    // ===== Status Bar: وضعیت اتصال فایل =====
+    const hubStatus = vscode.window.createStatusBarItem(
+      vscode.StatusBarAlignment.Left,
+      50
+    );
+    context.subscriptions.push(hubStatus);
+
+    function updateHubStatus() {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor || editor.document.languageId !== 'gmo') {
+        hubStatus.hide();
+        return;
+      }
+      const meta = hubSession.get(editor.document.uri.toString());
+      if (meta) {
+        hubStatus.text = `$(cloud) Hub: ${meta.name} v${meta.version}`;
+        hubStatus.tooltip = 'این فایل به Hub متصل است';
+        hubStatus.show();
+      } else {
+        hubStatus.hide();
+      }
+    }
+
+    updateHubStatusFn = updateHubStatus;
+
+    context.subscriptions.push(
+      vscode.window.onDidChangeActiveTextEditor(updateHubStatus),
+      vscode.workspace.onDidSaveTextDocument(updateHubStatus),
+      vscode.workspace.onDidCloseTextDocument(() => {
+        updateHubStatus();
+      })
+    );
+    updateHubStatus();
+  }
+
+  // ===== Format دستی =====
   context.subscriptions.push(
     vscode.commands.registerCommand('gmo.formatDocument', async function () {
       const editor = vscode.window.activeTextEditor;
@@ -315,41 +507,25 @@ function activate(context) {
     })
   );
 
-  // ===== دستور ورود =====
+  // ===== ورود =====
   context.subscriptions.push(
     vscode.commands.registerCommand('gmo.login', function () {
       return loginCommand(context);
     })
   );
 
-  // ===== دستور خروج =====
+  // ===== خروج =====
   context.subscriptions.push(
     vscode.commands.registerCommand('gmo.logout', function () {
       return logoutCommand(context);
     })
   );
 
-  // ===== دیباگ توکن =====
-  context.subscriptions.push(
-    vscode.commands.registerCommand('gmo.debugToken', async function () {
-      var t = await getStoredToken(context);
-      if (!t) {
-        vscode.window.showInformationMessage('هیچ توکنی ذخیره نشده.');
-      } else {
-        vscode.window.showInformationMessage(
-          'توکن: ' + t.substring(0, 40) + '...'
-        );
-        console.log('[GMO] Full token:', t);
-      }
-    })
-  );
-
-  // ===== دستور Backtest =====
+  // ===== Backtest =====
   context.subscriptions.push(
     vscode.commands.registerCommand('gmo.runBacktest', async function () {
       console.log('[GMO] runBacktest START');
 
-      // ---- چک فایل فعال ----
       var editor = vscode.window.activeTextEditor;
       if (!editor) {
         vscode.window.showWarningMessage('هیچ فایلی باز نیست.');
@@ -362,16 +538,13 @@ function activate(context) {
         return;
       }
 
-      // ---- چک خالی نبودن ----
       var rawCode = editor.document.getText();
       if (!rawCode.trim()) {
         vscode.window.showWarningMessage('استراتژی خالی است.');
         return;
       }
 
-      // ============================================================
-      // ⭐ فرمت خودکار قبل از ارسال به بک‌تست
-      // ============================================================
+      // فرمت خودکار قبل از ارسال
       const shouldAutoFormat = vscode.workspace
         .getConfiguration('gmo.runBacktest')
         .get('autoFormat', true);
@@ -390,14 +563,13 @@ function activate(context) {
         }
       }
 
-      // ---- خواندن کد پس از فرمت ----
       var code = editor.document.getText();
       if (!code.trim()) {
         vscode.window.showWarningMessage('استراتژی خالی است.');
         return;
       }
 
-      // ---- چک توکن ----
+      // چک توکن
       var token = await getStoredToken(context);
       if (!token) {
         var action = await vscode.window.showWarningMessage(
@@ -415,7 +587,7 @@ function activate(context) {
         if (!token) return;
       }
 
-      // ---- انتخاب بازه ----
+      // انتخاب بازه
       var periodPick = await vscode.window.showQuickPick(
         [
           { label: '۳۰ روز اخیر', value: '30' },
@@ -425,7 +597,7 @@ function activate(context) {
       );
       if (!periodPick) return;
 
-      // ---- تلاش (با retry) ----
+      // تلاش (با retry)
       for (var attempt = 0; attempt < 2; attempt++) {
         var result = await vscode.window.withProgress(
           {
@@ -467,7 +639,6 @@ function activate(context) {
           }
         );
 
-        // ---- خطای شبکه ----
         if (!result.ok) {
           vscode.window.showErrorMessage('خطا در ارتباط: ' + result.error);
           return;
@@ -486,10 +657,22 @@ function activate(context) {
           result.parserText.substring(0, 200)
         );
 
-        // ---- توکن معتبر نبود ----
+        // توکن معتبر نبود
         if (result.backtestText.trim() === '..!') {
           await clearToken(context);
           await updateStatusBar(context);
+
+          // ⭐ Hub را هم ریست کن (توکن باطل شده)
+          if (hubDeps && hubDeps.tree) {
+            try {
+              if (hubDeps.session && hubDeps.session.entries) {
+                hubDeps.session.entries.clear();
+              }
+              hubDeps.tree.reset('not-logged-in');
+            } catch (e) {
+              console.warn('[GMO Hub] reset after invalid token failed:', e);
+            }
+          }
 
           var act = await vscode.window.showErrorMessage(
             'توکن معتبر نیست. لطفاً مجدداً وارد شوید.',
@@ -507,12 +690,24 @@ function activate(context) {
           continue;
         }
 
-        // ---- موفق ----
+        // موفق
         showResultPanel(context, result.backtestText, result.parserText);
         return;
       }
 
       vscode.window.showErrorMessage('پس از دو تلاش، احراز هویت ناموفق بود.');
+    })
+  );
+
+  // ===== Run Strategy (اجرای استراتژی) =====
+  context.subscriptions.push(
+    vscode.commands.registerCommand('gmo.runStrategy', async function () {
+      try {
+        await runStrategyCommand(context, getStoredToken, loginCommand);
+      } catch (err) {
+        console.error('[GMO Strategy] runStrategy error:', err && err.message);
+        vscode.window.showErrorMessage('خطا در اجرای استراتژی: ' + (err && err.message ? err.message : String(err)));
+      }
     })
   );
 
@@ -679,6 +874,7 @@ function showResultPanel(context, backtestText, parserText) {
 <body>
   ${backtestSection}
   ${parserSection}
+
 </body>
 </html>`;
 }

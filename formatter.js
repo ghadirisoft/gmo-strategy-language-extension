@@ -11,7 +11,6 @@ const DEFAULT_OPTIONS = {
   uppercaseKeywords: true,
   addSpaceAroundOperators: true,
   trimTrailingSpaces: true,
-  emptyLineBetweenBlocks: true,
   finalNewline: true,
 };
 
@@ -31,24 +30,31 @@ function getOptions() {
       'trimTrailingSpaces',
       DEFAULT_OPTIONS.trimTrailingSpaces
     ),
-    emptyLineBetweenBlocks: cfg.get(
-      'emptyLineBetweenBlocks',
-      DEFAULT_OPTIONS.emptyLineBetweenBlocks
-    ),
     finalNewline: cfg.get('finalNewline', DEFAULT_OPTIONS.finalNewline),
   };
 }
 
 // ============================================================
-// جدا کردن کامنت از کد (با احترام به رشته‌های تک‌کوتیشنی)
+// جدا کردن کامنت از کد (با احترام به رشته‌های تک‌کوتیشنی و escape)
 // ============================================================
 function splitLineComment(line) {
   let inString = false;
+  let escaped = false;
   for (let i = 0; i < line.length - 1; i++) {
     const ch = line[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (ch === '\\') {
+      escaped = true;
+      continue;
+    }
     if (ch === "'") {
       inString = !inString;
-    } else if (!inString && ch === '/' && line[i + 1] === '/') {
+      continue;
+    }
+    if (!inString && ch === '/' && line[i + 1] === '/') {
       return {
         code: line.slice(0, i),
         comment: line.slice(i),
@@ -66,7 +72,15 @@ function normalizeOperators(code, opts) {
 
   let s = code;
 
-  // --- مرحله ۱: پلیس‌هولدر برای عملگرهای دو-کاراکتری ---
+  // --- مرحله ۱: محافظت از رشته‌های تک‌کوتیشنی (اول از همه!) ---
+  // باید قبل از هر جایگزینی انجام شود تا رشته‌هایی مثل 'a->b' خراب نشوند.
+  const strings = [];
+  s = s.replace(/'[^']*'/g, (m) => {
+    strings.push(m);
+    return '\u0005' + (strings.length - 1) + '\u0006';
+  });
+
+  // --- مرحله ۲: پلیس‌هولدر برای عملگرهای دو-کاراکتری ---
   const PH = {
     '->': '\u0001',
     '>=': '\u0002',
@@ -75,65 +89,80 @@ function normalizeOperators(code, opts) {
   };
   s = s.replace(/->|>=|<=|<>/g, (m) => PH[m]);
 
-  // --- مرحله ۲: محافظت از رشته‌های تک‌کوتیشنی ---
-  const strings = [];
-  s = s.replace(/'[^']*'/g, (m) => {
-    strings.push(m);
-    return '\u0005' + (strings.length - 1) + '\u0006';
-  });
-
   // --- مرحله ۳: یکسان‌سازی حروف عملگرهای منطقی ---
-  s = s.replace(/\b(and|or|not)\b/gi, (m) => m.toUpperCase());
+  s = s.replace(/\b(and|or|not|if)\b/gi, (m) => m.toUpperCase());
 
   // --- مرحله ۴: محافظت کامل از عملگرهای منطقی ---
-  //     هر AND/OR/NOT (با هر فاصله یا چسبیدگی قبل/بعد) را با پلیس‌هولدر
-  //     احاطه می‌کنیم تا مراحل نرمال‌سازی پرانتز و عملگر به آن دست نزنند.
-  //     از \u0007 به‌عنوان «نشانگر مرز» استفاده می‌کنیم.
   const LOGICAL_MARK = '\u0007';
   s = s.replace(/\b(AND|OR|NOT|IF)\b/g, (_, kw) => {
     return LOGICAL_MARK + kw + LOGICAL_MARK;
   });
 
-  // --- مرحله ۵: نرمال‌سازی عملگرها ---
+  // --- مرحله ۵: پرانتزها (قبل از عملگرها!) ---
+  // فاصله بین نام تابع/متغیر و پرانتز باز را حذف کن
+  // (فقط وقتی قبلش شناسه/عدد/پرانتز بسته/براکت باشد)
+  // این کار باعث می‌شود فاصله بعد از عملگرها (مثل - و +) حفظ شود.
+  s = s.replace(/([A-Za-z0-9_)\]])\s+\(/g, '$1(');
+  // فاصله داخل پرانتز باز را حذف کن
+  s = s.replace(/\(\s+/g, '(');
+  // فاصله داخل پرانتز بسته را حذف کن
+  s = s.replace(/\s+\)/g, ')');
+
+  // --- مرحله 5.5: محافظت از علامت منفی یکانی (unary minus) ---
+  // '-' که به‌عنوان «منفی عدد» استفاده می‌شود (نه تفریق دوتایی)
+  // باید بدون فاصله به عددش بچسبد؛ مثلاً '> -1' نباید به '> - 1' تبدیل شود.
+  //
+  // '-' یکانی است اگر در ابتدای عبارت باشد یا بلافاصله بعد از:
+  //   عملگر تک‌کاراکتری (= + - * / < >)، پرانتز باز '('، کاما ','،
+  //   کولون ':'، یا محل‌سازهای عملگرهای دو‌کاراکتری
+  //   (\u0001-\u0004 یعنی -> >= <= <>) و کلمات کلیدی منطقی (\u0007 یعنی IF/AND/OR/NOT) بیاید.
+  //
+  // این '-ها' را با یک کاراکتر غیرفضایی‌ساز (\u000E) جایگزین می‌کنیم
+  // تا در مرحله 6 به آنها فاصله اضافه نشود؛ سپس در مرحله 6.5 بازگردانی می‌شوند.
+  // نکته: کاراکتر \u000E جزو \s نیست، پس در جمع‌کردن فاصله‌ها دست‌نخورده می‌ماند.
+  const UNARY_MINUS_PH = '\u000E';
+  s = s.replace(
+    /(^|[(),:+\-*/<>=\u0001\u0002\u0003\u0004\u0007])\s*-\s*(?=\d|\.\d)/g,
+    (_m, prefix) => prefix + UNARY_MINUS_PH
+  );
+
+  // --- مرحله 6: نرمال‌سازی عملگرها (بعد از پرانتزها!) ---
+  // اکنون که پرانتزها فشرده شده‌اند، عملگرها فاصله صحیح می‌گیرند.
+  // توجه: '-های' یکانی دیگر در اینجا حضور ندارند، پس فقط '-های' تفریق دوتایی فاصله می‌گیرند.
   s = s.replace(/\s*([=+\-*/<>])\s*/g, ' $1 ');
   s = s.replace(/\s*,\s*/g, ', ');
 
-  // پرانتز باز: فاصلهٔ داخلی حذف می‌شود (BUY( نه BUY ( )
-  s = s.replace(/[ \t]*\([ \t]*/g, '(');
-  // پرانتز بسته: فاصلهٔ داخلی حذف می‌شود
-  s = s.replace(/[ \t]*\)/g, ')');
-
   s = s.replace(/[ \t]+/g, ' ');
 
-  // --- مرحله ۶: بازگرداندن رشته‌ها ---
+  // --- مرحله 6.5: بازگرداندن علامت منفی یکانی ---
+  // \u000E را دوباره به '-' تبدیل می‌کنیم.
+  s = s.replace(/\u000E/g, '-');
+
+  // --- مرحله ۷: بازگرداندن رشته‌ها ---
   s = s.replace(/\u0005(\d+)\u0006/g, (_, i) => strings[Number(i)]);
 
-  // --- مرحله ۷: بازگرداندن عملگرهای دو-کاراکتری ---
+  // --- مرحله ۸: بازگرداندن عملگرهای دو-کاراکتری ---
   for (const k of Object.keys(PH)) {
     s = s.split(PH[k]).join(' ' + k + ' ');
   }
 
-  // --- مرحله ۸: بازگرداندن عملگرهای منطقی با فاصلهٔ صحیح ---
-  //     LOGICAL_MARK را با یک فاصله جایگزین می‌کنیم.
-  //     توجه: چون مارک در دو طرف کلمه است، خروجی « AND » می‌شود.
-  //     سپس فاصله‌های اضافی را جمع می‌کنیم.
+  // --- مرحله ۹: بازگرداندن عملگرهای منطقی با فاصله صحیح ---
   s = s.split(LOGICAL_MARK).join(' ');
 
-  // --- مرحله ۹: تمیزکاری نهایی ---
+  // --- مرحله ۱۰: تمیزکاری نهایی ---
   s = s.replace(/[ \t]+/g, ' ');
   s = s.replace(/^\s+|\s+$/g, '');
 
   return s;
 }
 
-
 // ============================================================
 // فرمت‌کردن کامل متن
 // ============================================================
-function formatGmoText(text, opts) {
+function formatGmoText(text, opts, forcedEol) {
   if (!text) return text;
 
-  const eol = text.includes('\r\n') ? '\r\n' : '\n';
+  const eol = forcedEol || (text.includes('\r\n') ? '\r\n' : '\n');
   const rawLines = text.split(/\r?\n/);
 
   const indentUnit = opts.useTabs ? '\t' : ' '.repeat(opts.indentSize);
@@ -220,6 +249,14 @@ function formatGmoText(text, opts) {
         });
         continue;
       }
+      // خط ناشناخته داخل PARAMETERS → دو واحد تورفتگی (مثل پارامترها)
+      records.push({
+        type: 'raw',
+        indent: 2,
+        code: normalizeOperators(trimmedCode, opts),
+        comment: comment.trim(),
+      });
+      continue;
     }
 
     // داخل RULES
@@ -235,6 +272,7 @@ function formatGmoText(text, opts) {
     // هر چیز ناشناخته
     records.push({
       type: 'raw',
+      indent: 1,
       code: normalizeOperators(trimmedCode, opts),
       comment: comment.trim(),
     });
@@ -273,6 +311,10 @@ function formatGmoText(text, opts) {
     lastEmitted = lineObj;
   };
 
+  // تابع کمکی برای uppercase کردن کلیدواژه‌ها بر اساس تنظیمات
+  const kwCase = (kw) =>
+    opts.uppercaseKeywords ? kw.toUpperCase() : kw.toLowerCase();
+
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
 
@@ -288,25 +330,30 @@ function formatGmoText(text, opts) {
       case 'comment':
         lineText = indentUnit + r.comment;
         break;
+
       case 'header': {
-        const kw = r.keyword;
-        const val = r.value
-          ? r.keyword === 'DESCRIPTION'
-            ? ': ' + r.value
-            : ' ' + r.value
-          : '';
-        // هدرها بدون تورفتگی (مثل END) در ابتدای سطر قرار می‌گیرند
+        const kw = kwCase(r.keyword);
+        let val = '';
+        if (r.keyword === 'DESCRIPTION') {
+          // DESCRIPTION همیشه با : نمایش داده می‌شود
+          val = r.value ? ': ' + r.value : ':';
+        } else {
+          val = r.value ? ' ' + r.value : '';
+        }
         lineText = kw + val;
         if (r.comment) lineText += '  ' + r.comment;
         break;
       }
+
       case 'section':
         // PARAMETERS: و RULES: هم بدون تورفتگی
-        lineText = r.name + ':';
+        lineText = kwCase(r.name) + ':';
         break;
+
       case 'end':
-        lineText = 'END';
+        lineText = kwCase('END');
         break;
+
       case 'param': {
         const name = opts.uppercaseKeywords
           ? r.name.toUpperCase()
@@ -317,15 +364,18 @@ function formatGmoText(text, opts) {
         if (r.comment) lineText += '  ' + r.comment;
         break;
       }
+
       case 'rule': {
         const leftPad = r.leftPad || '';
         lineText = indentUnit + indentUnit + r.code.replace('->', leftPad + '->');
         if (r.comment) lineText += '  ' + r.comment;
         break;
       }
+
       case 'raw':
       default: {
-        lineText = indentUnit + (r.code || '');
+        const indentCount = r.indent || 1;
+        lineText = indentUnit.repeat(indentCount) + (r.code || '');
         if (r.comment) lineText += '  ' + r.comment;
         break;
       }
@@ -358,8 +408,12 @@ function registerFormatter(context) {
           opts.useTabs = !options.insertSpaces;
         }
 
+        // EOL را دقیقاً از document بگیر (نه heuristic)
+        const eol =
+          document.eol === vscode.EndOfLine.CRLF ? '\r\n' : '\n';
+
         const original = document.getText();
-        const formatted = formatGmoText(original, opts);
+        const formatted = formatGmoText(original, opts, eol);
 
         if (formatted === original) return [];
 

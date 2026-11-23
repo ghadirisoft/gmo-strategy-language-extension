@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90D9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+
+    <!-- ماسک برای برش متن GMO از داخل ابر -->
+    <mask id="gmoCutout">
+      <rect x="0" y="0" width="128" height="128" fill="white"/>
+      <text x="64" y="66" font-family="Arial Black, Arial, sans-serif" font-size="38" font-weight="bold" fill="black" text-anchor="middle" dominant-baseline="middle" letter-spacing="6">GMO</text>
+    </mask>
+  </defs>
+
+  <!-- Cloud shape بزرگ‌تر با ماسک برش -->
+  <path d="
+    M 14 96
+    L 114 96
+    C 123 96, 127 89, 127 80
+    C 127 76, 125 72, 122 69
+    C 127 65, 128 59, 128 52
+    C 128 38, 117 27, 103 27
+    C 99 27, 95 28, 92 30
+    C 88 15, 74 5, 58 5
+    C 39 5, 24 17, 21 34
+    C 10 37, 2 47, 2 59
+    C 2 71, 6 83, 14 92
+    C 13 93, 13 95, 14 96
+    Z
+  "
+  fill="url(#cloudGrad)"
+  filter="url(#shadow)"
+  mask="url(#gmoCutout)"
+  />
+</svg>

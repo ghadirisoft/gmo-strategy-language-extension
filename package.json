@@ -1,8 +1,8 @@
 {
   "name": "gmo-strategy",
   "displayName": "GMO Strategy Language",
-  "description": "GMO Strategy language support + simulation execution",
-  "version": "1.1.0",
+  "description": "GMO Strategy language support (Strategy Hub + simulation execution)",
+  "version": "2.0.0",
   "icon": "icon.png",
   "license": "SEE LICENSE IN LICENSE",
   "repository": {
@@ -17,22 +17,55 @@
   "engines": {
     "vscode": "^1.80.0"
   },
-  "categories": ["Programming Languages", "Snippets", "Formatters"],
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "gmo",
+    "gold",
+    "trading",
+    "strategy",
+    "backtest",
+    "gmo-strategy",
+    "goldai",
+    "hub",
+    "طلا",
+    "استراتژی",
+    "معاملات",
+    "بک‌تست",
+    "مخزن"
+  ],
   "activationEvents": [
     "onLanguage:gmo",
+    "onCommand:gmo.runStrategy",
     "onCommand:gmo.runBacktest",
     "onCommand:gmo.login",
     "onCommand:gmo.logout",
-    "onCommand:gmo.debugToken",
-    "onCommand:gmo.formatDocument"
+    "onCommand:gmo.formatDocument",
+    "onCommand:gmo.refreshDiagnostics",
+    "onView:gmoHubView",
+    "onCommand:gmo.hub.refresh",
+    "onCommand:gmo.hub.openStrategy",
+    "onCommand:gmo.hub.saveToHub",
+    "onCommand:gmo.hub.refreshFromHub",
+    "onCommand:gmo.hub.disconnect",
+    "onCommand:gmo.hub.showDetails"
   ],
   "main": "./extension.js",
   "contributes": {
     "languages": [
       {
         "id": "gmo",
-        "aliases": ["GMO Strategy", "gmo"],
-        "extensions": [".gmo"],
+        "aliases": [
+          "GMO Strategy",
+          "gmo"
+        ],
+        "extensions": [
+          ".gmo"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -49,40 +82,210 @@
         "path": "./snippets/gmo.json"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "gmoHubContainer",
+          "title": "GMO Strategy Hub",
+          "icon": "media/gmo-hub-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "gmoHubContainer": [
+        {
+          "id": "gmoHubView",
+          "name": "استراتژی‌ها",
+          "icon": "media/gmo-hub-icon.svg",
+          "contextualTitle": "GMO Strategy Hub"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "gmoHubView",
+        "contents": "برای مشاهده استراتژی‌های خود وارد شوید.\n[GMO ورود به](command:gmo.login)\n\nپس از ورود، هم شبیه‌ساز و هم مخزن استراتژی در دسترس خواهند بود."
+      }
+    ],
     "commands": [
       {
         "command": "gmo.runBacktest",
-        "title": "GMO: Run Backtest"
+        "title": "GMO: Run Backtest",
+        "category": "GMO",
+        "icon": "$(beaker)"
       },
       {
         "command": "gmo.login",
-        "title": "GMO: Login"
+        "title": "GMO: Login",
+        "category": "GMO",
+        "icon": "$(account)"
       },
       {
         "command": "gmo.logout",
-        "title": "GMO: Logout"
+        "title": "GMO: Logout",
+        "category": "GMO",
+        "icon": "$(sign-out)"
       },
       {
         "command": "gmo.formatDocument",
-        "title": "GMO: Format Document"
+        "title": "GMO: Format Document",
+        "category": "GMO",
+        "icon": "$(symbol-namespace)"
+      },
+      {
+        "command": "gmo.refreshDiagnostics",
+        "title": "GMO: Refresh Diagnostics",
+        "category": "GMO",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gmo.hub.refresh",
+        "title": "GMO Hub: Refresh",
+        "category": "GMO Hub",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "gmo.hub.openStrategy",
+        "title": "GMO Hub: Open Strategy",
+        "category": "GMO Hub",
+        "icon": "$(file-code)"
+      },
+      {
+        "command": "gmo.hub.saveToHub",
+        "title": "GMO Hub: Save to Hub",
+        "category": "GMO Hub",
+        "icon": "$(cloud-upload)"
+      },
+      {
+        "command": "gmo.hub.refreshFromHub",
+        "title": "GMO Hub: Refresh from Hub",
+        "category": "GMO Hub",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "gmo.hub.disconnect",
+        "title": "GMO Hub: Disconnect",
+        "category": "GMO Hub",
+        "icon": "$(debug-disconnect)"
+      },
+      {
+        "command": "gmo.hub.showDetails",
+        "title": "GMO Hub: Show Details",
+        "category": "GMO Hub",
+        "icon": "$(info)"
+      },
+      {
+        "command": "gmo.runStrategy",
+        "title": "GMO: Run Strategy",
+        "category": "GMO",
+        "icon": "$(play)"
       }
     ],
     "menus": {
+      "view/title": [
+        {
+          "command": "gmo.hub.refresh",
+          "when": "view == gmoHubView",
+          "group": "navigation@1"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "gmo.hub.openStrategy",
+          "when": "view == gmoHubView && viewItem == gmoHubStrategy",
+          "group": "1_open@1"
+        },
+        {
+          "command": "gmo.hub.saveToHub",
+          "when": "view == gmoHubView && viewItem == gmoHubStrategy",
+          "group": "2_sync@1"
+        },
+        {
+          "command": "gmo.hub.refreshFromHub",
+          "when": "view == gmoHubView && viewItem == gmoHubStrategy",
+          "group": "2_sync@2"
+        },
+        {
+          "command": "gmo.hub.disconnect",
+          "when": "view == gmoHubView && viewItem == gmoHubStrategy",
+          "group": "2_sync@3"
+        },
+        {
+          "command": "gmo.hub.showDetails",
+          "when": "view == gmoHubView && viewItem == gmoHubStrategy",
+          "group": "3_details@1"
+        }
+      ],
       "editor/context": [
         {
           "when": "editorLangId == gmo",
           "command": "gmo.runBacktest",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.hub.saveToHub",
+          "group": "1_modification@1"
+        },
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.hub.disconnect",
+          "group": "1_modification@2"
         },
         {
           "when": "editorLangId == gmo",
           "command": "gmo.formatDocument",
-          "group": "1_modification"
+          "group": "1_modification@3"
+        },
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.refreshDiagnostics",
+          "group": "1_modification@4"
+        },
+        {
+          "when": "editorLangId == gmo",
+          "command": "gmo.runStrategy",
+          "group": "navigation@2"
         }
       ],
       "commandPalette": [
         {
+          "command": "gmo.runBacktest",
+          "when": "editorLangId == gmo"
+        },
+        {
           "command": "gmo.formatDocument",
+          "when": "editorLangId == gmo"
+        },
+        {
+          "command": "gmo.refreshDiagnostics",
+          "when": "editorLangId == gmo"
+        },
+        {
+          "command": "gmo.hub.saveToHub",
+          "when": "editorLangId == gmo"
+        },
+        {
+          "command": "gmo.hub.disconnect",
+          "when": "editorLangId == gmo"
+        },
+        {
+          "command": "gmo.hub.openStrategy"
+        },
+        {
+          "command": "gmo.hub.showDetails"
+        },
+        {
+          "command": "gmo.hub.refresh"
+        },
+        {
+          "command": "gmo.login"
+        },
+        {
+          "command": "gmo.logout"
+        },
+        {
+          "command": "gmo.runStrategy",
           "when": "editorLangId == gmo"
         }
       ]
@@ -98,6 +301,18 @@
         "command": "gmo.formatDocument",
         "key": "shift+alt+f",
         "mac": "shift+option+f",
+        "when": "editorLangId == gmo"
+      },
+      {
+        "command": "gmo.hub.saveToHub",
+        "key": "ctrl+alt+s",
+        "mac": "cmd+alt+s",
+        "when": "editorLangId == gmo"
+      },
+      {
+        "command": "gmo.runStrategy",
+        "key": "f5",
+        "mac": "f5",
         "when": "editorLangId == gmo"
       }
     ],
@@ -157,6 +372,58 @@
           "type": "boolean",
           "default": true,
           "description": "قالب‌بندی خودکار استراتژی قبل از ارسال به شبیه‌ساز."
+        },
+        "gmo.diagnostics.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "فعال بودن خطایابی زنده (Diagnostics)."
+        },
+        "gmo.diagnostics.debounceMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "maximum": 2000,
+          "description": "مدت تأخیر (میلی‌ثانیه) قبل از اجرای خطایابی پس از تایپ."
+        },
+        "gmo.diagnostics.showWarnings": {
+          "type": "boolean",
+          "default": true,
+          "description": "نمایش هشدارها (Warning) در کنار خطاها (Error)."
+        },
+        "gmo.hover.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "فعال بودن نمایش Tooltip (Hover)."
+        },
+        "gmo.completion.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "فعال بودن تکمیل خودکار (IntelliSense)."
+        },
+        "gmo.inlayHints.showFieldMeaning": {
+          "type": "boolean",
+          "default": true,
+          "description": "نمایش معنی FIELD(n) کنار آن (مثلاً «اعتماد»)."
+        },
+        "gmo.inlayHints.showReturnType": {
+          "type": "boolean",
+          "default": false,
+          "description": "نمایش نوع خروجی توابع آماری (عدد/تاریخ)."
+        },
+        "gmo.inlayHints.showParamType": {
+          "type": "boolean",
+          "default": true,
+          "description": "نمایش نوع مقدار پارامترها (عدد/رشته/تاریخ)."
+        },
+        "gmo.hub.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "فعال بودن اتصال به GMO Strategy Hub. اگر غیرفعال شود، Sidebar و دستورات مخزن نمایش داده نمی‌شوند و هیچ درخواست شبکه‌ای به مخزن ارسال نمی‌شود."
+        },
+        "gmo.hub.downloadFolder": {
+          "type": "string",
+          "default": "",
+          "description": "پوشهٔ ذخیرهٔ فایل‌های استراتژی دریافت‌شده از مخزن. اگر خالی باشد، از پوشهٔ .gmo-hub در workspace (یا temp اگر workspace نباشد) استفاده می‌شود."
         }
       }
     },
@@ -257,11 +524,14 @@
             }
           }
         ]
-      }
+      },
+      "editor.inlayHints.enabled": "onUnlessPressed"
     }
   },
   "scripts": {
-    "package": "vsce package"
+    "package": "vsce package",
+    "publish": "vsce publish",
+    "lint": "node -c extension.js && node -c formatter.js && node -c parser.js && node -c codes.js && node -c definition-provider.js && node -c hover-provider.js && node -c reference-provider.js && node -c rename-provider.js && node -c diagnostic-provider.js && node -c completion-provider.js && node -c code-action-provider.js && node -c document-symbol-provider.js && node -c folding-provider.js && node -c signature-help-provider.js && node -c inlay-hints-provider.js && node -c hub/hub-constants.js && node -c hub/hub-errors.js && node -c hub/hub-client.js && node -c hub/hub-cache.js && node -c hub/hub-session.js && node -c views/hub-tree-provider.js && node -c commands/_helpers.js && node -c commands/hub-refresh.js && node -c commands/hub-open-strategy.js && node -c commands/hub-save-to-hub.js && node -c commands/hub-refresh-from-hub.js && node -c commands/hub-disconnect.js && node -c commands/hub-show-details.js"
   },
   "devDependencies": {
     "@types/vscode": "^1.80.0"
